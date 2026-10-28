@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ThunderSpam AI Settings</title>
+    <link rel="stylesheet" href="options.css?v=0.1.7-reprocess-job" />
+  </head>
+  <body>
+    <main>
+      <h1>ThunderSpam AI</h1>
+      <div class="actions actions-top">
+        <button type="button" id="load-previous-config">Load previous config</button>
+        <button type="button" id="save-settings-top" class="primary">Save changes</button>
+        <span id="save-status-top" class="status"></span>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab-button active" role="tab" aria-selected="true" data-tab-target="model">
+          Model & Prompt
+        </button>
+        <button type="button" class="tab-button" role="tab" data-tab-target="spam">Spam Handling</button>
+        <button type="button" class="tab-button" role="tab" data-tab-target="diagnostics">Diagnostics & Logs</button>
+        <button type="button" class="tab-button" role="tab" data-tab-target="stats">Usage Stats</button>
+        <button type="button" class="tab-button" role="tab" data-tab-target="unread">Unread Domains</button>
+        <button type="button" class="tab-button" role="tab" data-tab-target="attention">Attention Scores</button>
+      </div>
+
+      <div class="tab-panels">
+        <div class="tab-panel active" data-tab-panel="model">
+          <section class="card">
+            <h2>Model Provider</h2>
+            <p class="hint">Choose where ThunderSpam AI sends classification requests.</p>
+            <div class="field">
+              <label for="model-provider">Provider</label>
+              <select id="model-provider">
+                <option value="ollama">Ollama (local)</option>
+                <option value="openai_compatible">Local LLM (OpenAI-compatible)</option>
+                <option value="openai">OpenAI API</option>
+              </select>
+            </div>
+
+            <div id="ollama-settings">
+              <div class="field">
+                <label for="ollama-url">Base URL</label>
+                <input type="text" id="ollama-url" placeholder="http://127.0.0.1:11434" />
+                <p class="hint">
+                  ThunderSpam AI sends only the metadata and text of each email to this Ollama instance. Use
+                  localhost when possible to keep messages on-device.
+                </p>
+              </div>
+              <div class="field horizontal">
+                <div>
+                  <label for="ollama-model">Model</label>
+                  <select id="ollama-model"></select>
+                </div>
+                <button type="button" id="refresh-models">Refresh models</button>
+              </div>
+              <p id="model-status" class="status"></p>
+            </div>
+
+            <div id="openai-settings" class="hidden">
+              <div class="field">
+                <label for="openai-base-url" id="openai-base-url-label">Base URL</label>
+                <input
+                  type="text"
+                  id="openai-base-url"
+                  placeholder="https://api.openai.com/v1"
+                />
+                <p class="hint" id="openai-base-url-hint">
+                  Set an OpenAI-compatible API base URL. For local servers (LM Studio, llama.cpp, text-generation-webui),
+                  use the URL they provide (for example, <code>http://127.0.0.1:1234/v1</code>).
+                </p>
+              </div>
+              <div class="field">
+                <label for="openai-api-key" id="openai-api-key-label">OpenAI API key</label>
+                <input type="password" id="openai-api-key" autocomplete="off" />
+                <p class="hint" id="openai-api-key-hint">
+                  Create or manage a key at
+                  <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer"
+                    >platform.openai.com/api-keys</a
+                  >. Charges apply to API usage—review your account limits before enabling.
+                </p>
+              </div>
+              <div class="field">
+                <label for="openai-model">Model</label>
+                <input type="text" id="openai-model" list="openai-model-list" placeholder="gpt-5.2" />
+                <datalist id="openai-model-list">
+                  <option value="gpt-5.2"></option>
+                  <option value="gpt-4o-mini"></option>
+                  <option value="gpt-4o"></option>
+                  <option value="gpt-4.1-mini"></option>
+                  <option value="gpt-4.1"></option>
+                  <option value="o4-mini"></option>
+                </datalist>
+                <p class="hint">
+                  Enter a chat completion model ID supported by your endpoint (for example, <code>gpt-5.2</code> or
+                  a local model name). If you use a different model, it'll be added to this list after you save it.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Prompt Test</h2>
+            <p class="hint">
+              Provide a sample message to see how your current prompt and model classify it. The add-on uses the same
+              request flow as incoming mail.
+            </p>
+            <div class="two-column">
+              <div class="field">
+                <label for="prompt-test-from">From</label>
+                <input type="text" id="prompt-test-from" value="spammer@example.com" />
+              </div>
+              <div class="field">
+                <label for="prompt-test-to">To</label>
+                <input type="text" id="prompt-test-to" value="me@example.com" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="prompt-test-subject">Subject</label>
+              <input type="text" id="prompt-test-subject" value="Congratulations, you won!" />
+            </div>
+            <div class="field">
+              <label for="prompt-test-body">Body</label>
+              <textarea id="prompt-test-body" rows="8">Dear user,
+
+Claim your prize now by clicking our secure link: http://notlegit.example.com
+
+Best,
+Rewards Team</textarea>
+            </div>
+            <div class="actions">
+              <button type="button" id="run-prompt-test">Run prompt test</button>
+              <span id="prompt-test-status" class="status"></span>
+            </div>
+            <pre id="prompt-test-output" class="code-block hidden"></pre>
+          </section>
+
+          <section class="card">
+            <h2>Classification Prompt</h2>
+            <p class="hint">
+              ThunderSpam AI always sends the system instructions shown below. Add optional guidance to tailor the
+              classification without changing the required JSON format.
+            </p>
+            <pre id="prompt-system-preview" class="code-block"></pre>
+            <div class="field">
+              <label for="prompt-template">Additional guidance</label>
+              <textarea
+                id="prompt-template"
+                rows="6"
+                placeholder="Example: Highlight links and display names that look suspicious."
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="attention-prompt-template">Attention flag guidance</label>
+              <textarea
+                id="attention-prompt-template"
+                rows="4"
+                placeholder="Example: Mark as needing attention when the email is urgent, security-sensitive, or requires same-day action."
+              ></textarea>
+              <p class="hint">
+                This guidance is appended to the prompt to decide <code>needs_attention</code> and
+                <code>attention_score</code> (1-10 for non-spam; score 0 is set by the spam wrapper).
+              </p>
+            </div>
+            <p class="hint">
+              In your guidance you can reference placeholders such as <code>{{from}}</code>, <code>{{to}}</code>,
+              <code>{{subject}}</code>, <code>{{date}}</code>, <code>{{email_text}}</code>, or
+              <code>{{email_headers}}</code>.
+            </p>
+          </section>
+
+          <section class="card">
+            <h2>Ollama Quick Start</h2>
+            <ol>
+              <li>Install Ollama from <a href="https://ollama.ai" target="_blank">ollama.ai</a>, then launch it.</li>
+              <li>Download a model tuned for text classification, for example:</li>
+            </ol>
+            <pre><code>ollama pull llama3:8b
+ollama pull mistral
+ollama pull phi3:mini</code></pre>
+            <p class="hint">
+              Apple Silicon or modern NVIDIA GPUs can handle <code>llama3:8b</code>. For CPU-only systems, start with
+              <code>phi3:mini</code> or <code>mistral</code>.
+            </p>
+            <p>
+              To expose Ollama remotely (not recommended), set <code>OLLAMA_HOST=0.0.0.0</code> and secure the network.
+              See the <a href="https://github.com/ollama/ollama/blob/main/docs/usage.md" target="_blank">Ollama usage
+              guide</a> for details.
+            </p>
+          </section>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="spam">
+          <section class="card">
+            <h2>Spam Handling</h2>
+            <div class="field">
+              <label for="spam-action">When a message is flagged as spam</label>
+              <select id="spam-action">
+                <option value="move_junk">Move to Junk (default)</option>
+                <option value="mark_spam">Keep in place but mark as spam</option>
+                <option value="move_custom">Move to another folder</option>
+                <option value="none">Take no automatic action</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="custom-folder">Custom folder</label>
+              <select id="custom-folder" disabled></select>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-heading">
+              <h2>Sender Insights</h2>
+              <div class="actions actions-compact">
+                <button type="button" id="refresh-sender-stats">Refresh</button>
+                <span id="sender-stats-status" class="status"></span>
+              </div>
+            </div>
+            <p class="hint">
+              ThunderSpam AI tracks the senders it flags as spam so you can block frequent offenders without involving the
+              AI model.
+            </p>
+            <div class="sender-add-block">
+              <div class="field add-block-field">
+                <label for="manual-block-address">Block email address</label>
+                <div class="add-block-row">
+                  <input type="text" id="manual-block-address" placeholder="spammer@example.com" />
+                  <button type="button" id="add-block-address">Add</button>
+                </div>
+              </div>
+              <div class="field add-block-field">
+                <label for="manual-block-domain">Block domain</label>
+                <div class="add-block-row">
+                  <input type="text" id="manual-block-domain" placeholder="bad-domain.example" />
+                  <button type="button" id="add-block-domain">Add</button>
+                </div>
+              </div>
+            </div>
+            <div class="sender-stats-grid">
+              <div>
+                <h3>Top email addresses</h3>
+                <div class="table-actions">
+                  <button type="button" data-clear-target="addresses">Clear list</button>
+                </div>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Email</th>
+                        <th>Seen</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="sender-addresses-body"></tbody>
+                  </table>
+                  <p class="hint" id="sender-addresses-empty">No recent senders recorded yet.</p>
+                </div>
+              </div>
+              <div>
+                <h3>Top domains</h3>
+                <div class="table-actions">
+                  <button type="button" data-clear-target="domains">Clear list</button>
+                </div>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Domain</th>
+                        <th>Seen</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="sender-domains-body"></tbody>
+                  </table>
+                  <p class="hint" id="sender-domains-empty">No recent domains recorded yet.</p>
+                </div>
+              </div>
+            </div>
+            <div class="sender-blocklist">
+              <div>
+                <h3>Blocked addresses</h3>
+                <ul id="blocked-addresses-list" class="blocklist"></ul>
+                <p class="hint" id="blocked-addresses-empty">No blocked addresses.</p>
+              </div>
+              <div>
+                <h3>Blocked domains</h3>
+                <ul id="blocked-domains-list" class="blocklist"></ul>
+                <p class="hint" id="blocked-domains-empty">No blocked domains.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="diagnostics">
+          <section class="card">
+            <h2>Diagnostics</h2>
+            <label class="checkbox">
+              <input type="checkbox" id="debug-logging" />
+              <span>Enable verbose debug logging in the Thunderbird console</span>
+            </label>
+            <p class="hint">
+              Debug logs include request metadata and action outcomes. Disable this if you prefer a quieter console.
+            </p>
+            <div class="field">
+              <label for="filter-delay">Delay before processing new mail (ms)</label>
+              <input type="number" id="filter-delay" min="0" step="100" />
+              <p class="hint">
+                Adds a short pause so Thunderbird's built-in filters and rules finish first. Default: 1500&nbsp;ms.
+              </p>
+            </div>
+            <div class="actions">
+              <button type="button" id="open-message-debugger">Open message debugger</button>
+              <span class="hint">Use this for dedicated single-email replay and prompt tuning.</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Recent Classifications</h2>
+            <p class="hint">
+              ThunderSpam AI keeps the latest 100 classification results to help you evaluate prompts and models.
+            </p>
+            <div class="log-actions">
+              <button type="button" id="open-message-debugger-log">Open message debugger</button>
+              <button type="button" id="refresh-log">Refresh</button>
+              <button type="button" id="clear-log">Clear log</button>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>From</th>
+                    <th>Provider</th>
+                    <th>Model</th>
+                    <th>Endpoints</th>
+                    <th>Classification</th>
+                    <th>Decision code</th>
+                    <th>Score</th>
+                    <th>Needs attention</th>
+                    <th>Attention score</th>
+                    <th>Action</th>
+                    <th>Unsubscribe</th>
+                    <th>Reason</th>
+                    <th>Response</th>
+                  </tr>
+                </thead>
+                <tbody id="classification-log"></tbody>
+              </table>
+              <p id="log-empty" class="hint">No classifications recorded yet.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="stats">
+          <section class="card">
+            <h2>LLM Usage</h2>
+            <p class="hint">Track how often ThunderSpam AI called your configured model.</p>
+            <div class="stats-grid">
+              <div class="stat-block">
+                <span class="stat-label">Today</span>
+                <span class="stat-value" id="stat-llm-today">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Last 7 days</span>
+                <span class="stat-value" id="stat-llm-week">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Last 30 days</span>
+                <span class="stat-value" id="stat-llm-month">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">All time</span>
+                <span class="stat-value" id="stat-llm-total">0</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Pre-filtered by blocklists</h2>
+            <p class="hint">Messages stopped before reaching the LLM.</p>
+            <div class="stats-grid">
+              <div class="stat-block">
+                <span class="stat-label">Today</span>
+                <span class="stat-value" id="stat-prefilter-today">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Last 7 days</span>
+                <span class="stat-value" id="stat-prefilter-week">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Last 30 days</span>
+                <span class="stat-value" id="stat-prefilter-month">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">All time</span>
+                <span class="stat-value" id="stat-prefilter-total">0</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Classification outcomes</h2>
+            <p class="hint">Breakdown of how ThunderSpam AI labeled recent messages.</p>
+            <div class="stats-grid">
+              <div class="stat-block">
+                <span class="stat-label">Spam (today / week / month / total)</span>
+                <span class="stat-value" id="stat-spam-summary">0 / 0 / 0 / 0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Not spam (today / week / month / total)</span>
+                <span class="stat-value" id="stat-notspam-summary">0 / 0 / 0 / 0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Errors (today / week / month / total)</span>
+                <span class="stat-value" id="stat-error-summary">0 / 0 / 0 / 0</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Current blocklist footprint</h2>
+            <div class="stats-grid small">
+              <div class="stat-block">
+                <span class="stat-label">Blocked addresses</span>
+                <span class="stat-value" id="stat-blocked-addresses">0</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-label">Blocked domains</span>
+                <span class="stat-value" id="stat-blocked-domains">0</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="unread">
+          <section class="card">
+            <div class="card-heading">
+              <h2>Unread domains</h2>
+              <div class="actions actions-compact">
+                <button type="button" id="refresh-unread-domains">Refresh</button>
+                <button type="button" id="unread-domains-undo" class="hidden">Undo</button>
+                <span id="unread-domains-status" class="status"></span>
+              </div>
+            </div>
+            <p class="hint">
+              Shows the domains with the most unread messages so you can mark them as read in bulk.
+            </p>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Domain</th>
+                    <th>Unread</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="unread-domains-body"></tbody>
+              </table>
+              <p id="unread-domains-empty" class="hint">No unread domains found.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="attention">
+          <section class="card">
+            <h2>Attention routing</h2>
+            <p class="hint">
+              When enabled, ThunderSpam AI copies messages into attention folders by score so you can see them in any
+              client.
+            </p>
+            <label class="checkbox">
+              <input type="checkbox" id="attention-routing-enabled" />
+              <span>Move low/intermediate into attention folders (high stays in inbox)</span>
+            </label>
+            <div class="field">
+              <label for="attention-low-max">Low priority max score</label>
+              <input type="number" id="attention-low-max" min="1" max="10" />
+            </div>
+            <div class="field">
+              <label for="attention-move-delay">Move delay (seconds)</label>
+              <input type="number" id="attention-move-delay" min="1" max="300" />
+              <p class="hint">Waits after classification so your rules can move messages first.</p>
+            </div>
+            <div class="field">
+              <label for="attention-return-interval">Low priority return sweep (minutes)</label>
+              <input type="number" id="attention-return-interval" min="1" max="60" />
+              <p class="hint">How often read items are moved back to Inbox.</p>
+            </div>
+            <div class="field">
+              <label for="attention-folder-low">Low priority folder</label>
+              <input type="text" id="attention-folder-low" placeholder="Attention - Low Priority" />
+            </div>
+            <div class="field">
+              <label>Missing attention folders</label>
+              <p class="hint" id="attention-folder-status">Click refresh to check missing folders.</p>
+              <p class="hint" id="attention-folder-help">
+                To create a folder: right‑click your Inbox → New Folder… → paste the name from the list below.
+              </p>
+              <div class="actions actions-compact">
+                <button type="button" id="attention-folder-refresh">Refresh</button>
+                <button type="button" id="attention-folder-open">Open folder picker</button>
+              </div>
+              <ul id="attention-folder-missing" class="blocklist"></ul>
+            </div>
+            <label class="checkbox">
+              <input type="checkbox" id="attention-copy-spam" />
+              <span>Also copy spam‑classified messages</span>
+            </label>
+          </section>
+
+          <section class="card">
+            <h2>Attention score indicators</h2>
+            <p class="hint">
+              ThunderSpam AI maps attention scores to native Thunderbird indicators so they appear in the message list.
+              Enable the <strong>Priority</strong> and <strong>Starred</strong> columns to view them.
+            </p>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Attention score</th>
+                    <th>Priority</th>
+                    <th>Starred</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>8–10</td>
+                    <td>High</td>
+                    <td>Yes</td>
+                  </tr>
+                  <tr>
+                    <td>5–7</td>
+                    <td>High</td>
+                    <td>No</td>
+                  </tr>
+                  <tr>
+                    <td>3–4</td>
+                    <td>Normal</td>
+                    <td>No</td>
+                  </tr>
+                  <tr>
+                    <td>1–2</td>
+                    <td>Low</td>
+                    <td>No</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="hint">
+              These indicators update when new messages are classified. Existing messages keep their current priority.
+            </p>
+          </section>
+
+          <section class="card">
+            <div class="card-heading">
+              <h2>Reprocess unread mail</h2>
+              <div class="actions actions-compact">
+                <button type="button" id="reprocess-unread">Reprocess unread</button>
+                <button type="button" id="cancel-reprocess-unread" disabled>Cancel</button>
+                <span id="reprocess-unread-status" class="status"></span>
+              </div>
+            </div>
+            <p class="hint">
+              Re-runs the model on all unread messages in Inbox folders. Useful after prompt or routing changes.
+            </p>
+          </section>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="restore-defaults">Restore defaults</button>
+        <button type="button" id="save-settings" class="primary">Save changes</button>
+        <span id="save-status" class="status"></span>
+      </div>
+    </main>
+    <script src="options.js?v=0.1.7-reprocess-job" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+# Local credentials and exported configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+*settings*.json
+*config-backup*
+*config_backup*
+
+# Private mail, runtime state, and diagnostics
+*.eml
+*.mbox
+*.msf
+*.sqlite*
+*.db
+*.log
+logs/
+backups/
+exports/
+profiles/
+
+# Generated packages and workstation files
+*.xpi
+*.zip
+.DS_Store
+node_modules/
+coverage/
+.idea/
+.vscode/

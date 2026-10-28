@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ThunderSpam AI Message Debugger</title>
+    <link rel="stylesheet" href="debug.css?v=0.1.7-reprocess-job" />
+  </head>
+  <body>
+    <main>
+      <header class="header">
+        <h1>ThunderSpam AI Message Debugger</h1>
+        <div class="actions">
+          <button type="button" id="open-settings">Open settings</button>
+          <span id="status" class="status"></span>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="row">
+          <div class="field">
+            <label for="message-id">Message ID</label>
+            <input type="text" id="message-id" placeholder="Thunderbird numeric message id" />
+          </div>
+          <div class="field grow">
+            <label for="folder">Folder</label>
+            <input type="text" id="folder" readonly />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" id="load-message">Load message</button>
+          <button type="button" id="run-replay">Replay (dry run)</button>
+          <button type="button" id="apply-message">Reprocess message</button>
+          <button type="button" id="save-global" class="primary">Save replay settings globally</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Message Input</h2>
+        <div class="field">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="from">From</label>
+            <input type="text" id="from" />
+          </div>
+          <div class="field">
+            <label for="to">To</label>
+            <input type="text" id="to" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="text" id="date" />
+        </div>
+        <div class="field">
+          <label for="headers">Headers</label>
+          <textarea id="headers" rows="6"></textarea>
+        </div>
+        <div class="field">
+          <label for="body">Body</label>
+          <textarea id="body" rows="10"></textarea>
+        </div>
+        <div class="field">
+          <label for="attachments">Attachments (comma-separated)</label>
+          <input type="text" id="attachments" />
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Replay Configuration</h2>
+        <div class="row">
+          <div class="field">
+            <label for="provider">Provider</label>
+            <select id="provider">
+              <option value="ollama">Ollama (local)</option>
+              <option value="openai_compatible">Local LLM (OpenAI-compatible)</option>
+              <option value="openai">OpenAI API</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="model">Model</label>
+            <input type="text" id="model" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="base-url">Base URL</label>
+          <input type="text" id="base-url" />
+        </div>
+        <div class="field">
+          <label for="api-key">API key (optional for local endpoints)</label>
+          <input type="password" id="api-key" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="spam-guidance">Spam guidance override</label>
+          <textarea id="spam-guidance" rows="4"></textarea>
+        </div>
+        <div class="field">
+          <label for="attention-guidance">Attention guidance override</label>
+          <textarea id="attention-guidance" rows="4"></textarea>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Replay Output</h2>
+        <div id="parsed-output" class="parsed-output hidden"></div>
+        <pre id="output" class="hidden"></pre>
+      </section>
+    </main>
+    <script src="debug.js?v=0.1.7-reprocess-job" type="module"></script>
+  </body>
+</html>

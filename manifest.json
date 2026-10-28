@@ -1,0 +1,47 @@
+{
+  "manifest_version": 2,
+  "name": "ThunderSpam AI",
+  "version": "0.1.9",
+  "description": "Leverage a local Ollama model to classify incoming Thunderbird mail as spam or legitimate.",
+  "author": "ThunderSpamAI",
+  "icons": {
+    "32": "icons/icon.svg",
+    "64": "icons/icon.svg"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_title": "ThunderSpam AI",
+    "default_icon": "icons/icon.svg"
+  },
+  "permissions": [
+    "accountsRead",
+    "messagesRead",
+    "messagesImport",
+    "messagesMove",
+    "messagesUpdate",
+    "storage",
+    "notifications",
+    "alarms",
+    "menus",
+    "accountsFolders",
+    "unlimitedStorage",
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://buttface.rocks/*"
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "thunderspam-ai@example.com",
+      "strict_min_version": "115.0"
+    }
+  }
+}
